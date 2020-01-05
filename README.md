@@ -1,4 +1,4 @@
-## Vue 学习 webpack 学习
+## Vue 学习
 
 ### Vue 的基本使用结构
 
@@ -537,7 +537,7 @@ data: {
 
 ##### 全局组件
 
-+ 通过 ```Vue.component``` 定义全局组件
++ 通过 ```Vue.component``` 定义全局组件，<font color = "red">通过全局注册的组件，在子组件内部也可以互相使用</font>
 ~~~javascript
 // 通过 Vue.component 方法将 template 模板字符串定义为一个 componentName 的组件标签
 Vue.component(componentName, {
@@ -560,8 +560,27 @@ Vue.component(componentName, {
 })
 ~~~
 
++ <font color = "red"> 通过 HTML 中的 template 元素实现组件模板的定义 </font>
+~~~html
+<template id = "templateID">
+	<div>
+		content
+	</div>
+</template>
+~~~
+~~~javascript
+Vue.component(componentName, {
+	data(){
+		return {}
+	},
+	// 通过使用HTML 进行模板的定义
+	template: "#templateID"
+})
+~~~
+
 ##### 私有组件
 
++ 通过 Vue 实例的 components 属性进行子组件定义，<font color = "red">私有组件不可以互相调用</font>
 ~~~javascript
 const componentA = {}
 const componentB = {}
@@ -576,9 +595,34 @@ new Vue({
 })
 ~~~
 
-#### 子组件传值
++ 结合 html 定义模板的方式
+~~~html
+<template id = "templateID">
+	<div>
+		content
+	</div>
+</template>
+~~~
+~~~javascript
+new Vue({
+	el : "#app",
+	components: {
+		componentName : {template : "templateID"}
+	}
+})
+~~~
 
-1. 在子组件上定义 ```props``` 属性
+#### 组件切换
+
++ 通过 ```v-if``` 或 ```v-show``` 进行组件的切换显示
+
++ 使用 Vue 提供的 ```component``` 元素进行组件切换 ```<component ：is = "componentName">``` 是一个占位符，用于显示不同的组件
+
++ 组件切换与动画的结合使用
+
+#### props
+
+1. 在子组件上定义 ```props``` 属性, ```props``` 属性可以实现<font color = "red">静态传值或者动态传值</font>, 动态传值指的是通过 ```v-bind``` 进行传值。<font color = "yellow">当使用动态传值时，其赋值内部才会当作表达式进行解析，因此除了 字符串 以外的数据类型都需要动态传值</font>
 ~~~javascript
 Vue.component("test", {
 	props:['post'],
@@ -586,12 +630,38 @@ Vue.component("test", {
 })
 ~~~
 
-2. ```props``` 属性中的值作为子组件与父组件之间连接的桥梁，不但是子组件元素的属性，同时其绑定值是向父组件索取的。
+2. ```props``` 属性中的值作为子组件与父组件之间连接的桥梁，不但是子组件元素的属性，同时其绑定值是向父组件索取的。传值是 **单向的**。只能从上往下传递，因此不能在子组件中改变 props 的值。<font color = "red">由于数组与对象是引用传递的，因此在子组件中改变其属性的值会影响到父组件</font>
 ~~~html
 <test v-bind:post = "superPost"> 这里的superPost 为父组件中 data 的值 <test>
 ~~~
 
 3. 即若子组件想要使用父组件中的数据，需要使用 ```props``` 属性在自己定义的元素标签上添加属性，并通过属性绑定获取父组件数据
+
+4. 同时 ```props``` 属性可以是一个对象，在指定参数的同时，限制该参数的数据类型(```String, Number, Boolean, Array, Object, Function Promise```),还可以是自定义的构造函数（通过 instanceof 进行判断）
+~~~javascript
+props: {
+	title: String,
+	age: Number,
+	isShow: Boolean,
+	...
+	propA: {
+		type: Number,
+		default: 10
+	}
+}
+~~~
+
+5. 通过以下方式将一个对象的所有属性传递到 ```props```
+~~~html
+obj = {
+	id: 1,
+	title: "123"
+}
+<test v-bind = "obj"></test>
+<!-- 等价于 -->
+
+<test v-bind: id = "obj.id" v-bind: title = "obj.title"></test>
+~~~
 
 #### 父组件监测子组件的事件
 
@@ -606,10 +676,186 @@ Vue.component("test", {
 <test v-on: superHandler = "... $event">
 ~~~
 
+#### 基础组件的自动化全局注册
+
++ **应用特定样式和约定的基础组件名应该全部以一个特定的前缀开头**
+
 #### 动态组件
 
+#### 单文件组件
 
++ 当项目比较复杂时，使用单纯的全局注册或者局部注册都不方便，<font color = "yellow">如组件名不能重复，字符串模板不够方便，CSS样式无法插入，无法使用babel.</font>
+
++ 可以使用以 ```.vue``` 结尾的单文件组件解决以上问题
+
++ 单文件组件主要由三部分组成
+
+	- <template></template> ： 使用 HTML 语法定义组件模板
+
+	- <script></script> ： 定义JS
+	~~~javascript
+	<script>
+		import OtherComponent from 'OtherComponent.vue'
+
+		export default{
+			data(){
+				return {}
+			},
+			components{
+				OtherComponent
+			}
+			...
+		}
+	</script>
+	~~~
+
+	- <style lang = "less / scss" scoped></style> ： 其中scoped 属性用于指定**局部的CSS属性**.
 
 ### 插槽
 
++ 将 ```<slot>``` 元素作为承载分发内容的接口，为子组件提供**占位**。当子组件中不包含 ```<slot>``` 元素时，组件之间的内容会被抛弃
+~~~html
+<template>
+	<a href = "">
+	<slot>默认值，当应用组件时，若为传入 slot 部分的内容，将自动显示默认值</slot>
+</template>
+~~~
+
+#### 具名插槽
+
++ 当一个组件需要多个插槽时，需要使用具名插槽进行区分 ```name``` 属性，未指定 ```name``` 属性的 ```slot``` 会有2默认的 ```default``` 名，```v-slot ``` 只能添加在 ```<template>``` 上
+~~~html
+<template>
+	<header>
+		<slot name = "header"> header </slot>
+	</header>
+	<main>
+		<slot> main </slot>
+	</main>
+	<footer>
+		<slot name= "footer"> footer </slot>
+	</footer>
+</template>
+
+<!-- 使用  -->
+<componentName>
+	<template v-slot:header> content </template>
+	<p>默认放到未指定 name 的插槽</p>
+	<template v-slot:footer> content </template>
+</componentName>
+~~~
+
+#### 插槽prop
+
++ 通过插槽 prop 允许插槽访问子组件数据
+~~~html
+<template>
+	<slot v-bind:user = "user">
+	<!-- 在 slot 中绑定子组件的数据 -->
+		{{ user.firatname }}
+	</slot>
+</template>
+
+<templateName>
+	<template v-slot:default = "slotNmae">
+		{{ slotName.user.lastname }}
+	</template>
+</templateName>
+~~~
+
 ### Vue 工具
+
+### 动画
+
++ **通过 transition 与 css 类实现动画**
+
++ **通过 第三方库实现 动画**
+
++ **通过钩子函数实现半场动画**
+
++ Vue 提供了 ```transition``` 封装的组件，可以给系列情况的元素添加过度与动画
+
+	- ```v-if```
+
+	- ```v-show```
+
+	- 动态组件
+
+	- 组件根节点
+
++ 在元素进入与离开的过度中有 6 个 class 的切换
+
+	- ```v-enter```: 元素的初始状态，在元素插入之前生效
+
+	- ```v-enter-active``` ： 元素进入过渡时应用，在整个过程中有效，过度结束后**移除**
+
+	- ```v-enter-to``` ： 过度结束后生效，同时移除 ```v-enter```
+
+	- ```v-leave``` : 定义离开过度的初始状态
+
+	- ```v-leave-active``` ： 定义过度过程中的状态，结束后移除
+
+	- ```v-leave-to``` ： 过度结束后的状态，同时移除 ```v-leave```
+
++ ```transition``` 的两种使用方式
+
+	- ```<transition>``` : 此时无 **name** 属性，因此类名按照默认  ```v-enter```, ```v-leave```
+
+	- ```<transition name = "my-transiton">``` : 此时使用了 **name** 属性，类名为 ```my-transition-enter```, ```my-transition-leave```
+
++ css 中关于过度的属性
+
+	- transition: 定义过度的 元素 时间  动画 (all time active)
+
+	- transform ： 定义坐标 （translateX translateY translate）
+
++ css 中动画相关属性
+
+	- animation
+
++ 第三方库
+
+	- animate.css
+
+	-
+
++ 过度钩子函数
+
+	- ```before-enter```
+	~~~javascript
+	function(el){}
+	~~~
+
+	- ```enter```
+	~~~javascript
+	function(el, done){
+		done() // 即执行 after-enter 钩子函数
+	}
+	~~~
+
+	- ```after-enter```
+
+	- ```enter-cancelled```
+
+	- ```before-leave```
+
+	- ```leave```
+	~~~javascript
+	function(el, done){
+		done()
+	}
+	~~~
+
+	- ```after-leave```
+
+	- ```leave-cancelled```
+
++ transition-group
+
+	- .v-move {transition : all 0.5s ease } 与 .v-leave-to{position : absolute } 设置元素移动时的动作
+
+	- transition-group 必须元素要有 key 值
+
+	- tag 属性 用于设置转换的元素
+
+	- appear 属性用于设置开场动画

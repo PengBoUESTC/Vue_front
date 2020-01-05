@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html>
+<head>
+	<title>首页</title>
+	<meta charset="utf-8">
+	<script type="text/javascript" src = "../lib/vue.js"></script>
+	<script src="../lib/axios.js"></script>
+	<link rel = "stylesheet" type="text/css" href = "../lib/bootstrap.css">
+</head>
+
+<body>
+	<h1>首页</h1>
+	<div id = "app">
+		name: <input v-model = "name" >
+		path: <input v-model = "path" >
+		说明: <input v-model = "illustrate" >
+		<button class = "btn btn-primary" @click = "addItem">添加</button>
+
+		<table class = "table">
+			<tr>
+				<th> id </th>
+				<th> name </th>
+				<th> path </th>
+				<th> 说明 </th>
+				<th> 操作 </th>
+			</tr>
+
+			<tr v-for = "(item, index) in items">
+				<td> ${ index } </td>
+				<td> ${ item.name } </td>
+				<td> ${ item.path }  </td>
+				<td> ${ item.illustrate }  </td>
+				<td> <a @click.prevent = "remove(item._id)"> 删除 </a></td>
+			</tr>
+		</table>
+	</div>
+
+<script>
+
+	// 全局配置 axios 域名地址
+	// 好像配置完 全局 baseURL 使用相对或者绝对路由都可
+	axios.defaults.baseURL = "http://localhost:3000"
+
+	let vm = new Vue({
+		// 该参数 用于解决 与 后端模板语法冲突的问题
+		delimiters: ['${', '}'],
+		el: "#app",
+		data: {
+			items: "Vue",
+			name: '',
+			path: '',
+			illustrate: '',
+		},
+		methods:{
+			getMsg(){
+				axios.get('/getData', {"cache-control": "no-cache"}).then((res)=>{
+					console.log('数据获取...')
+					if(res.status === 200){
+						this.items = (res.data)
+					}
+				})
+			},
+			remove(id){
+				console.log('数据删除...')
+				axios.get("/remove?id=" + id).then(()=>{
+					this.getMsg()
+				})
+			},
+			addItem(){
+				console.log('数据添加...')
+				const params = new URLSearchParams()
+				params.append("name", this.name)
+				params.append("path", this.path)
+				params.append("illustrate", this.illustrate)
+				// const params = {
+				// 	name : this.name,
+				// 	path : this.path,
+				// 	illustrate : this.illustrate
+				// }
+
+				axios.post("/upload",params).then(res => {
+					if(res.status === 200){
+						this.getMsg()
+					}
+				})
+			}
+		},
+		created(){
+			this.getMsg()
+		}
+	})
+</script>
+
+</body>
+
+</html>
